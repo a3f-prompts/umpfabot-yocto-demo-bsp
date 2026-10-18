@@ -1,0 +1,123 @@
+From: Ahmad Fatoum <a.fatoum@pengutronix.de>
+Date: Mon, 31 Aug 2026 16:47:44 +0200
+Subject: [PATCH] virtio: fix out-of-bounds scatterlist array access in
+ virtqueue_add_{in,out}buf
+
+virtqueue_add_outbuf() and virtqueue_add_inbuf() take one scatterlist
+with N entries, but pass N to virtqueue_add_sgs() as the number of
+scatterlists, which then reads sgs[1] past the single pointer on the
+stack. In virtio_net_send(), GCC happened to place the zeroed
+virtio_net_hdr there, so the bogus entry was NULL and skipped. With
+clang it's the saved frame pointer:
+
+  qemu-system-aarch64: virtio: bogus descriptor or out of resources
+
+virtqueue_add_sgs() also used the number of scatterlists instead of
+entries for its free space accounting.
+
+Do as Linux does: have virtqueue_add() take the total entry count,
+count the entries in virtqueue_add_sgs() and let the single-list
+wrappers call virtqueue_add() directly.
+
+While at it, rewind i to head in the unmap_release path: err_idx is
+assigned from i just above the loop, so the loop broke on its first
+iteration and left the entries mapped before the failing one mapped.
+
+Upstream-Status: Backport [https://github.com/barebox/barebox/commit/24e609e61e5e29037eba9c89de53937a0cc5b12c]
+
+Fixes: 2336406d2b91 ("virtio: replace virtio_sg with common scatterlist")
+Assisted-by: Claude:fable-5
+Signed-off-by: Ahmad Fatoum <a.fatoum@pengutronix.de>
+Link: https://lore.barebox.org/20260831144746.1035711-1-a.fatoum@pengutronix.de
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+(cherry picked from commit 24e609e61e5e29037eba9c89de53937a0cc5b12c)
+---
+ drivers/virtio/virtio_ring.c | 24 ++++++++++++++++++++----
+ include/linux/virtio_ring.h  |  8 ++++++--
+ 2 files changed, 26 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+index 55f6be311c51..9fb8510f1d04 100644
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -63,12 +63,11 @@ static void vring_unmap_one(struct virtqueue *vq,
+ 		       DMA_FROM_DEVICE : DMA_TO_DEVICE);
+ }
+ 
+-int virtqueue_add_sgs(struct virtqueue *vq, struct scatterlist *sgs[],
+-		      unsigned int out_sgs, unsigned int in_sgs,
+-		      void *data)
++int virtqueue_add(struct virtqueue *vq, struct scatterlist *sgs[],
++		  unsigned int total_sg, unsigned int out_sgs,
++		  unsigned int in_sgs, void *data)
+ {
+ 	struct vring_desc *desc;
+-	unsigned int total_sg = out_sgs + in_sgs;
+ 	struct scatterlist *sg;
+ 	unsigned int i, err_idx, n, avail, descs_used, uninitialized_var(prev);
+ 	int head;
+@@ -165,6 +164,7 @@ int virtqueue_add_sgs(struct virtqueue *vq, struct scatterlist *sgs[],
+ 
+ unmap_release:
+ 	err_idx = i;
++	i = head;
+ 
+ 	for (n = 0; n < total_sg; n++) {
+ 		if (i == err_idx)
+@@ -174,7 +174,23 @@ int virtqueue_add_sgs(struct virtqueue *vq, struct scatterlist *sgs[],
+ 	}
+ 
+ 	return -ENOMEM;
++}
++
++int virtqueue_add_sgs(struct virtqueue *vq, struct scatterlist *sgs[],
++		      unsigned int out_sgs, unsigned int in_sgs,
++		      void *data)
++{
++	unsigned int i, total_sg = 0;
++
++	/* Count them first. */
++	for (i = 0; i < out_sgs + in_sgs; i++) {
++		struct scatterlist *sg;
++
++		for (sg = sgs[i]; sg; sg = sg_next(sg))
++			total_sg++;
++	}
+ 
++	return virtqueue_add(vq, sgs, total_sg, out_sgs, in_sgs, data);
+ }
+ 
+ static bool virtqueue_kick_prepare(struct virtqueue *vq)
+diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
+index 7548504bc42b..6e5c9c3af242 100644
+--- a/include/linux/virtio_ring.h
++++ b/include/linux/virtio_ring.h
+@@ -188,6 +188,10 @@ int virtqueue_add_sgs(struct virtqueue *vq, struct scatterlist *sgs[],
+ 		      unsigned int out_sgs, unsigned int in_sgs,
+ 		      void *data);
+ 
++int virtqueue_add(struct virtqueue *vq, struct scatterlist *sgs[],
++		  unsigned int total_sg, unsigned int out_sgs,
++		  unsigned int in_sgs, void *data);
++
+ /**
+  * virtqueue_add_outbuf - expose output buffers to other end
+  * @vq: the struct virtqueue we're talking about.
+@@ -204,7 +208,7 @@ static inline int virtqueue_add_outbuf(struct virtqueue *vq,
+ 				       struct scatterlist *sg, unsigned int num,
+ 				       void *data)
+ {
+-	return virtqueue_add_sgs(vq, &sg, num, 0, data);
++	return virtqueue_add(vq, &sg, num, 1, 0, data);
+ }
+ 
+ /**
+@@ -223,7 +227,7 @@ static inline int virtqueue_add_inbuf(struct virtqueue *vq,
+ 				      struct scatterlist *sg, unsigned int num,
+ 				      void *data)
+ {
+-	return virtqueue_add_sgs(vq, &sg, 0, num, data);
++	return virtqueue_add(vq, &sg, num, 0, 1, data);
+ }
+ 
+ /**

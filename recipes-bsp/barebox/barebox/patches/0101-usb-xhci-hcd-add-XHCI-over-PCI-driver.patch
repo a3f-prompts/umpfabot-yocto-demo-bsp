@@ -1,0 +1,176 @@
+From: Ahmad Fatoum <a.fatoum@barebox.org>
+Date: Mon, 29 Jun 2026 14:45:22 +0200
+Subject: [PATCH] usb: xhci-hcd: add XHCI over PCI driver
+
+In order to support USB in QEMU Virt, add support for registering over
+PCI as well. The probe function looks nearly identical to the DT-probed
+xhci_probe with the difference that we map a PCI MMIO region.
+
+To make it readily usable, also enable it in multi_v8_defconfig.
+
+Upstream-Status: Backport [https://github.com/barebox/barebox/commit/fcb6345b3882a12d2880fe12a53dfca7f5e76757]
+
+Signed-off-by: Ahmad Fatoum <a.fatoum@barebox.org>
+Link: https://lore.barebox.org/20260629124631.689090-3-a.fatoum@barebox.org
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+(cherry picked from commit fcb6345b3882a12d2880fe12a53dfca7f5e76757)
+---
+ arch/arm/configs/multi_v8_defconfig |  1 +
+ drivers/usb/host/Kconfig            |  7 +++
+ drivers/usb/host/Makefile           |  1 +
+ drivers/usb/host/xhci-pci.c         | 97 +++++++++++++++++++++++++++++++++++++
+ drivers/usb/host/xhci.h             |  1 +
+ 5 files changed, 107 insertions(+)
+ create mode 100644 drivers/usb/host/xhci-pci.c
+
+diff --git a/arch/arm/configs/multi_v8_defconfig b/arch/arm/configs/multi_v8_defconfig
+index a6cc49859620..c48a1bf86451 100644
+--- a/arch/arm/configs/multi_v8_defconfig
++++ b/arch/arm/configs/multi_v8_defconfig
+@@ -213,6 +213,7 @@ CONFIG_USB_IMX_CHIPIDEA=y
+ CONFIG_USB_DWC3=y
+ CONFIG_USB_DWC3_DUAL_ROLE=y
+ CONFIG_USB_EHCI=y
++CONFIG_USB_XHCI_PCI=y
+ CONFIG_USB_STORAGE=y
+ CONFIG_USB_ONBOARD_DEV=y
+ CONFIG_USB_GADGET=y
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 58f276cdb45a..049a3831cd66 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -41,3 +41,10 @@ config USB_XHCI
+ 
+ 	  This driver currently only supports virtual USB 2.0 ports, if you
+ 	  plan to use USB 3.0 devices, use a USB 2.0 cable in between.
++
++config USB_XHCI_PCI
++	tristate "xHCI over PCI driver"
++	depends on USB_XHCI && PCI
++	help
++	  Say y here if your USB 3.0 controller is connected via PCI and
++	  you wish to access the USB devices on the bus from barebox.
+diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+index cbddfbe9232e..ed446d0d801c 100644
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -6,3 +6,4 @@ obj-$(CONFIG_USB_EHCI_ZYNQ)	+= ehci-zynq.o
+ obj-$(CONFIG_USB_OHCI)		+= ohci-hcd.o
+ obj-$(CONFIG_USB_OHCI_AT91)	+= ohci-at91.o
+ obj-$(CONFIG_USB_XHCI)		+= xhci.o xhci-mem.o xhci-ring.o
++obj-$(CONFIG_USB_XHCI_PCI)	+= xhci-pci.o
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+new file mode 100644
+index 000000000000..62aadbabf88d
+--- /dev/null
++++ b/drivers/usb/host/xhci-pci.c
+@@ -0,0 +1,97 @@
++// SPDX-License-Identifier: GPL-2.0
++
++#include <linux/pci.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/reset.h>
++#include <module.h>
++
++#include "xhci.h"
++
++static const char hcd_name[] = "xhci_hcd";
++
++static int xhci_pci_common_probe(struct pci_dev *pdev, const struct pci_device_id *id)
++{
++	struct device *dev = &pdev->dev;
++	struct xhci_ctrl *ctrl;
++	void __iomem *base;
++	int ret;
++
++	(void)id;
++
++	ret = pci_enable_device(pdev);
++	if (ret)
++		return ret;
++
++	pci_set_master(pdev);
++
++	base = pci_iomap(pdev, 0);
++	if (!base) {
++		ret = dev_err_probe(dev, -EBUSY, "failed to map BAR0\n");
++		goto err_clear_master;
++	}
++
++	ctrl = xzalloc(sizeof(*ctrl));
++	ctrl->dev = dev;
++	ctrl->hccr = base;
++	ctrl->hcor = (struct xhci_hcor *)((uintptr_t)ctrl->hccr +
++		HC_LENGTH(xhci_readl(&(ctrl->hccr)->cr_capbase)));
++
++	dev->priv = ctrl;
++
++	ret = xhci_register(ctrl);
++	if (ret)
++		goto err_free_ctrl;
++
++	return 0;
++
++err_free_ctrl:
++	dev->priv = NULL;
++	free(ctrl);
++err_clear_master:
++	pci_clear_master(pdev);
++	return ret;
++}
++
++static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
++{
++	return xhci_pci_common_probe(dev, id);
++}
++
++static void xhci_pci_remove(struct pci_dev *dev)
++{
++	struct xhci_ctrl *ctrl = dev->dev.priv;
++
++	xhci_deregister(ctrl);
++	pci_clear_master(dev);
++	free(ctrl);
++}
++
++/*-------------------------------------------------------------------------*/
++
++/* PCI driver selection metadata; PCI hotplugging uses this */
++static const struct pci_device_id pci_ids[] = {
++	/* handle any USB 3.0 xHCI controller */
++	{ PCI_DEVICE_CLASS(PCI_CLASS_SERIAL_USB_XHCI, PCI_ANY_ID),
++	},
++	{ /* end: all zeroes */ }
++};
++MODULE_DEVICE_TABLE(pci, pci_ids);
++
++/* pci driver glue; this is a "new style" PCI driver module */
++static struct pci_driver xhci_pci_driver = {
++	.name =		hcd_name,
++	.id_table =	pci_ids,
++
++	.probe =	xhci_pci_probe,
++	.remove =	xhci_pci_remove,
++};
++
++static int __init xhci_pci_init(void)
++{
++	return pci_register_driver(&xhci_pci_driver);
++}
++module_init(xhci_pci_init);
++
++MODULE_DESCRIPTION("xHCI PCI Host Controller Driver");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index 37e8cee843cf..e5feb4f3d5a1 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -20,6 +20,7 @@
+ #include <io.h>
+ #include <io-64-nonatomic-lo-hi.h>
+ #include <linux/list.h>
++#include <linux/usb/usb.h>
+ 
+ #define MAX_EP_CTX_NUM		31
+ #define XHCI_ALIGNMENT		64

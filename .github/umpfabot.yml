@@ -1,0 +1,43 @@
+# umpfabot configuration, see https://github.com/a3f-prompts/umpfabot
+version: 1
+
+# identity for the BSP commits and umpf tags created by umpfabot, e.g.
+# "<app-slug>[bot] <<user-id>+<app-slug>[bot]@users.noreply.github.com>" for
+# the GitHub App the workflow uses (default: umpfabot <umpfabot@users.noreply.github.com>)
+#author: "umpfabot <umpfabot@users.noreply.github.com>"
+
+stable-update:
+  - id: barebox
+    series: recipes-bsp/barebox/barebox/patches/series.inc
+    recipe: recipes-bsp/barebox/barebox_2026.04.bb
+    # the umpf tags and topic branches
+    repository: https://github.com/a3f-prompts/barebox-umpfabot.git
+
+    upstream:
+      repository: https://github.com/barebox/barebox.git
+
+    tarball:
+      url: "https://barebox.org/download/barebox-{version}.tar.bz2"
+
+    labels: [barebox]
+
+  - id: linux-demo
+    series: recipes-kernel/linux/linux-demo/patches/series.inc
+    recipe: recipes-kernel/linux/linux-demo_7.2.bb
+    # the umpf tags and topic branches
+    repository: https://github.com/a3f-prompts/linux-umpfabot.git
+
+    upstream:
+      repository: https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
+      changelog-url: "https://cdn.kernel.org/pub/linux/kernel/v{major}.x/ChangeLog-{version}"
+
+    tarball:
+      url: "https://cdn.kernel.org/pub/linux/kernel/v{major}.x/linux-{version}.tar.xz"
+
+    kconfig:
+      defconfig: recipes-kernel/linux/linux-demo/defconfig
+      savedefconfig: true
+      # there is no SDK for the demo, the workflow installs the compiler
+      make-args: [ARCH=arm64, CROSS_COMPILE=aarch64-linux-gnu-]
+
+    labels: [kernel]
