@@ -57,10 +57,10 @@ Message-ID: <20260716115940.394832-1-yangjinqian1@huawei.com>
  1 file changed, 8 insertions(+)
 
 diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index b438dc2ce1b8..5c169fbb418a 100644
+index a9e1ee9536b5..db678f5a80e0 100644
 --- a/drivers/virtio/virtio_ring.c
 +++ b/drivers/virtio/virtio_ring.c
-@@ -3233,6 +3233,14 @@ bool virtqueue_enable_cb_delayed(struct virtqueue *_vq)
+@@ -3263,6 +3263,14 @@ bool virtqueue_enable_cb_delayed(struct virtqueue *_vq)
  {
  	struct vring_virtqueue *vq = to_vvq(_vq);
  
