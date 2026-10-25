@@ -35,20 +35,24 @@ to the barebox or linux repository and opens a pull request here that
 updates the patches, `UMPF_BASE`, the `SRC_URI` checksum and, for Linux,
 the defconfig.
 
-The Linux defconfig is a full `.config`, which umpfabot updates with
-`make olddefconfig`. It records the compiler version, so umpfabot runs
-`make` in a container with a fixed cross compiler, by default
-[`docker.io/tuxmake/arm64_gcc-14`](https://hub.docker.com/r/tuxmake/arm64_gcc-14).
-The defconfig was created in that container as well:
+The Linux defconfig is a full `.config` with Rust enabled, which umpfabot
+updates with `make olddefconfig`. umpfabot runs `make` in its default
+container [`docker.io/tuxmake/arm64_gcc-14`](https://hub.docker.com/r/tuxmake/arm64_gcc-14),
+which has GCC 14 and no Rust toolchain. The defconfig was deliberately
+created in another one, with GCC 16, rustc and bindgen, from a minimal
+configuration with `CONFIG_RUST=y`:
 
 ```
-docker run --rm -i -v "$PWD:$PWD:ro" -w "$PWD" docker.io/tuxmake/arm64_gcc-14 \
+docker run --rm -i -v "$PWD:$PWD:ro" -w "$PWD" docker.io/tuxmake/arm64_rust:20261001 \
     bash -c 'b=$(mktemp -d) && cat > $b/.config &&
              make -s O=$b ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig >&2 &&
              cat $b/.config' < defconfig > defconfig.new
 ```
 
-That way, the pull requests only show changes of the kernel.
+In umpfabot's container, `make olddefconfig` disables Rust and changes the
+compiler options. Since that happens for the old umpf as well, umpfabot
+keeps these options as they are and only applies what the update changes,
+and lists the kept options in the pull request.
 
 It needs a GitHub App with *Contents*, *Pull requests* and *Workflows*
 read and write permissions, installed for this repository, barebox-umpfabot

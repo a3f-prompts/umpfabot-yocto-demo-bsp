@@ -5,6 +5,10 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 
 inherit kernel
 
+# The defconfig enables Rust, which make olddefconfig only keeps if it finds the
+# Rust toolchain. kernel-yocto-rust.bbclass adds the same for linux-yocto.
+DEPENDS += "clang-native rust-native bindgen-cli-native"
+
 SRC_URI = " \
     https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-${UMPF_BASE}.tar.xz \
     file://defconfig \

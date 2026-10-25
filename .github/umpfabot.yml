@@ -35,8 +35,9 @@ stable-update:
       url: "https://cdn.kernel.org/pub/linux/kernel/v{major}.x/linux-{version}.tar.xz"
 
     # 'make olddefconfig' of the full .config, in umpfabot's default container
-    # docker.io/tuxmake/arm64_gcc-14 with the arm64 cross compiler of Debian,
-    # which the defconfig was created with. There is no SDK for the demo.
+    # docker.io/tuxmake/arm64_gcc-14 with GCC 14 and no Rust. The defconfig
+    # was made with GCC 16 and Rust, so umpfabot keeps the options that only
+    # differ because of that, see README.md. There is no SDK for the demo.
     kconfig:
       defconfig: recipes-kernel/linux/linux-demo/defconfig
       make-args: [ARCH=arm64, CROSS_COMPILE=aarch64-linux-gnu-]
