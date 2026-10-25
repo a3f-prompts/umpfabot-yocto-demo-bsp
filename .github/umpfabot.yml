@@ -34,10 +34,11 @@ stable-update:
     tarball:
       url: "https://cdn.kernel.org/pub/linux/kernel/v{major}.x/linux-{version}.tar.xz"
 
+    # 'make olddefconfig' of the full .config. There is no SDK for the demo:
+    # the workflow installs the cross compiler of Ubuntu 24.04, which the
+    # defconfig was created with, so its toolchain options stay the same.
     kconfig:
       defconfig: recipes-kernel/linux/linux-demo/defconfig
-      savedefconfig: true
-      # there is no SDK for the demo, the workflow installs the compiler
       make-args: [ARCH=arm64, CROSS_COMPILE=aarch64-linux-gnu-]
 
     labels: [kernel]

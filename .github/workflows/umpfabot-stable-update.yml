@@ -31,7 +31,9 @@ permissions:
 
 jobs:
   stable-update:
-    runs-on: ubuntu-latest
+    # not ubuntu-latest: the linux-demo defconfig records the version of the
+    # cross compiler of Ubuntu 24.04
+    runs-on: ubuntu-24.04
     steps:
       # A GitHub App token is needed: the GITHUB_TOKEN of this workflow can
       # neither push the umpf tags to the barebox and linux repositories nor

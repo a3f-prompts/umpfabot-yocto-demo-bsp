@@ -35,10 +35,17 @@ to the barebox or linux repository and opens a pull request here that
 updates the patches, `UMPF_BASE`, the `SRC_URI` checksum and, for Linux,
 the defconfig.
 
-It needs a GitHub App with *Contents* and *Pull requests* read and write
-permissions, installed for this repository, barebox-umpfabot and
-linux-umpfabot. Its ID is the `UMPFABOT_APP_ID` variable and its private key
-the `UMPFABOT_PRIVATE_KEY` secret of this repository.
+The Linux defconfig is a full `.config`, which umpfabot updates with
+`make olddefconfig`. It records the compiler version, so it was created
+with the `gcc-aarch64-linux-gnu` of Ubuntu 24.04, which the workflow
+installs. That way, the pull requests only show changes of the kernel.
+
+It needs a GitHub App with *Contents*, *Pull requests* and *Workflows*
+read and write permissions, installed for this repository, barebox-umpfabot
+and linux-umpfabot. *Workflows* is needed because barebox has GitHub
+workflows, which its releases change sometimes. Its ID is the
+`UMPFABOT_APP_ID` variable and its private key the `UMPFABOT_PRIVATE_KEY`
+secret of this repository.
 
 ## Building
 
