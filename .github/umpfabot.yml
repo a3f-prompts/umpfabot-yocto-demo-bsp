@@ -34,9 +34,9 @@ stable-update:
     tarball:
       url: "https://cdn.kernel.org/pub/linux/kernel/v{major}.x/linux-{version}.tar.xz"
 
-    # 'make olddefconfig' of the full .config. There is no SDK for the demo:
-    # the workflow installs the cross compiler of Ubuntu 24.04, which the
-    # defconfig was created with, so its toolchain options stay the same.
+    # 'make olddefconfig' of the full .config, in umpfabot's default container
+    # docker.io/tuxmake/arm64_gcc-14 with the arm64 cross compiler of Debian,
+    # which the defconfig was created with. There is no SDK for the demo.
     kconfig:
       defconfig: recipes-kernel/linux/linux-demo/defconfig
       make-args: [ARCH=arm64, CROSS_COMPILE=aarch64-linux-gnu-]

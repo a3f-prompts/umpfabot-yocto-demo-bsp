@@ -31,9 +31,7 @@ permissions:
 
 jobs:
   stable-update:
-    # not ubuntu-latest: the linux-demo defconfig records the version of the
-    # cross compiler of Ubuntu 24.04
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       # A GitHub App token is needed: the GITHUB_TOKEN of this workflow can
       # neither push the umpf tags to the barebox and linux repositories nor
@@ -54,12 +52,6 @@ jobs:
         with:
           token: ${{ steps.token.outputs.token }}
           fetch-depth: 0
-
-      # 'make olddefconfig' of the linux-demo defconfig
-      - name: Install the arm64 cross compiler
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq gcc-aarch64-linux-gnu bison flex
 
       - name: Compute cache key
         id: cache-key

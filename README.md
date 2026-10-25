@@ -36,9 +36,19 @@ updates the patches, `UMPF_BASE`, the `SRC_URI` checksum and, for Linux,
 the defconfig.
 
 The Linux defconfig is a full `.config`, which umpfabot updates with
-`make olddefconfig`. It records the compiler version, so it was created
-with the `gcc-aarch64-linux-gnu` of Ubuntu 24.04, which the workflow
-installs. That way, the pull requests only show changes of the kernel.
+`make olddefconfig`. It records the compiler version, so umpfabot runs
+`make` in a container with a fixed cross compiler, by default
+[`docker.io/tuxmake/arm64_gcc-14`](https://hub.docker.com/r/tuxmake/arm64_gcc-14).
+The defconfig was created in that container as well:
+
+```
+docker run --rm -i -v "$PWD:$PWD:ro" -w "$PWD" docker.io/tuxmake/arm64_gcc-14 \
+    bash -c 'b=$(mktemp -d) && cat > $b/.config &&
+             make -s O=$b ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig >&2 &&
+             cat $b/.config' < defconfig > defconfig.new
+```
+
+That way, the pull requests only show changes of the kernel.
 
 It needs a GitHub App with *Contents*, *Pull requests* and *Workflows*
 read and write permissions, installed for this repository, barebox-umpfabot
