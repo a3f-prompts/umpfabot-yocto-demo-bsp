@@ -1,10 +1,10 @@
 # umpfabot configuration, see https://github.com/a3f-prompts/umpfabot
 version: 1
 
-# identity for the BSP commits and umpf tags created by umpfabot, e.g.
-# "<app-slug>[bot] <<user-id>+<app-slug>[bot]@users.noreply.github.com>" for
-# the GitHub App the workflow uses (default: umpfabot <umpfabot@users.noreply.github.com>)
-#author: "umpfabot <umpfabot@users.noreply.github.com>"
+# identity for the BSP commits and umpf tags created by umpfabot: the bot
+# user of the a3f-umpfabot GitHub App, so they show its logo. The ID is from
+# curl -s 'https://api.github.com/users/a3f-umpfabot%5Bbot%5D'
+author: "a3f-umpfabot[bot] <347957790+a3f-umpfabot[bot]@users.noreply.github.com>"
 
 stable-update:
   - id: barebox
