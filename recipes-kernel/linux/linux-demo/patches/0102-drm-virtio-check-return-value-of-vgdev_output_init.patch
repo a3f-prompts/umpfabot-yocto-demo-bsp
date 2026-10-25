@@ -19,7 +19,7 @@ Link: https://patch.msgid.link/20260811015624.830-1-shechenglong@xfusion.com
  1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/gpu/drm/virtio/virtgpu_display.c b/drivers/gpu/drm/virtio/virtgpu_display.c
-index 44ffffec550f..f2b98d018c1e 100644
+index 85ea252c658e..a1a875a0c706 100644
 --- a/drivers/gpu/drm/virtio/virtgpu_display.c
 +++ b/drivers/gpu/drm/virtio/virtgpu_display.c
 @@ -378,8 +378,11 @@ int virtio_gpu_modeset_init(struct virtio_gpu_device *vgdev)

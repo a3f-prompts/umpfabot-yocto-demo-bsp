@@ -25,7 +25,7 @@ Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
  1 file changed, 10 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
-index 510b7c4efdff..316f03b97356 100644
+index d5b148bde180..faae58e3401a 100644
 --- a/drivers/virtio/virtio_mmio.c
 +++ b/drivers/virtio/virtio_mmio.c
 @@ -55,6 +55,7 @@
@@ -36,7 +36,7 @@ index 510b7c4efdff..316f03b97356 100644
  #include <linux/dma-mapping.h>
  #include <linux/highmem.h>
  #include <linux/interrupt.h>
-@@ -114,9 +115,9 @@ static int vm_finalize_features(struct virtio_device *vdev)
+@@ -117,9 +118,9 @@ static int vm_finalize_features(struct virtio_device *vdev)
  	vring_transport_features(vdev);
  
  	/* Make sure there are no mixed devices */
@@ -48,7 +48,7 @@ index 510b7c4efdff..316f03b97356 100644
  		return -EINVAL;
  	}
  
-@@ -254,6 +255,12 @@ static void vm_reset(struct virtio_device *vdev)
+@@ -257,6 +258,12 @@ static void vm_reset(struct virtio_device *vdev)
  
  	/* 0 status means a reset. */
  	writel(0, vm_dev->base + VIRTIO_MMIO_STATUS);
@@ -61,7 +61,7 @@ index 510b7c4efdff..316f03b97356 100644
  }
  
  
-@@ -600,7 +607,7 @@ static int virtio_mmio_probe(struct platform_device *pdev)
+@@ -610,7 +617,7 @@ static int virtio_mmio_probe(struct platform_device *pdev)
  
  	/* Check device version */
  	vm_dev->version = readl(vm_dev->base + VIRTIO_MMIO_VERSION);
