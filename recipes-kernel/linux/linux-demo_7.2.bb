@@ -13,7 +13,7 @@ SRC_URI = " \
     https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-${UMPF_BASE}.tar.xz \
     file://defconfig \
 "
-SRC_URI[sha256sum] = "f9fef3d14c0df53819026f4be74459835c2a0b0dcbf5b5bbd9ea19f0829402b3"
+SRC_URI[sha256sum] = "bb18468a8dc8978aa00caa6446e753f7b6da3fee56b6b7f38b16f9430ba02d4f"
 
 # UMPF_BASE, LINUX_VERSION and the patches, written by 'umpf format-patch --bb'
 # from the umpf tag in https://github.com/a3f-prompts/linux-umpfabot

@@ -68,10 +68,10 @@ index 405097e388a5..b646657fe7b0 100644
  	drm_dev_unplug(dev);
  }
 diff --git a/drivers/gpu/drm/virtio/virtgpu_drv.h b/drivers/gpu/drm/virtio/virtgpu_drv.h
-index 7449907754a4..400e9e70c354 100644
+index 5610add1da47..729a46df7736 100644
 --- a/drivers/gpu/drm/virtio/virtgpu_drv.h
 +++ b/drivers/gpu/drm/virtio/virtgpu_drv.h
-@@ -236,6 +236,7 @@ struct virtio_gpu_device {
+@@ -261,6 +261,7 @@ struct virtio_gpu_device {
  
  	struct virtio_gpu_queue ctrlq;
  	struct virtio_gpu_queue cursorq;
@@ -80,10 +80,10 @@ index 7449907754a4..400e9e70c354 100644
  
  	atomic_t pending_commands;
 diff --git a/drivers/gpu/drm/virtio/virtgpu_vq.c b/drivers/gpu/drm/virtio/virtgpu_vq.c
-index e5e1af8b8e8a..3812899a3847 100644
+index 28682a6d5937..f65eb32c8938 100644
 --- a/drivers/gpu/drm/virtio/virtgpu_vq.c
 +++ b/drivers/gpu/drm/virtio/virtgpu_vq.c
-@@ -396,7 +396,19 @@ static int virtio_gpu_queue_ctrl_sgs(struct virtio_gpu_device *vgdev,
+@@ -423,7 +423,19 @@ static int virtio_gpu_queue_ctrl_sgs(struct virtio_gpu_device *vgdev,
  	if (vq->num_free < elemcnt) {
  		spin_unlock(&vgdev->ctrlq.qlock);
  		virtio_gpu_notify(vgdev);
@@ -104,7 +104,7 @@ index e5e1af8b8e8a..3812899a3847 100644
  		goto again;
  	}
  
-@@ -566,7 +578,14 @@ static void virtio_gpu_queue_cursor(struct virtio_gpu_device *vgdev,
+@@ -593,7 +605,14 @@ static void virtio_gpu_queue_cursor(struct virtio_gpu_device *vgdev,
  	ret = virtqueue_add_sgs(vq, sgs, outcnt, 0, vbuf, GFP_ATOMIC);
  	if (ret == -ENOSPC) {
  		spin_unlock(&vgdev->cursorq.qlock);
