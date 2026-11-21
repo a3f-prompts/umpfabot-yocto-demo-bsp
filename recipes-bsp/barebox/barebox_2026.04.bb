@@ -8,7 +8,7 @@ inherit barebox
 LIC_FILES_CHKSUM = "file://COPYING;md5=f5125d13e000b9ca1f0d3364286c4192"
 
 SRC_URI = "https://barebox.org/download/barebox-${UMPF_BASE}.tar.bz2"
-SRC_URI[sha256sum] = "aa575d3ca4e7a8abe6b9796d0ff1d1ace43f86e34c627cc055ddb0a7ebd9dbe2"
+SRC_URI[sha256sum] = "45ebbdbfe667ca66455554454178d7f80f9c4ade0e0a5ea4c8ecf2a3073f5451"
 
 # UMPF_BASE and the patches, written by 'umpf format-patch --bb' from the
 # umpf tag in https://github.com/a3f-prompts/barebox-umpfabot
